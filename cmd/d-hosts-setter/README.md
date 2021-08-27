@@ -5,10 +5,9 @@
 定时更新本地的 hosts 文件，实现自定义域名的访问
 
 用法：
-注册到 windows 服务: sc.exe create HostsSetter binPath={path-to-this-project}/d-hosts-setter.exe -a={http://d-hosts-getter-host:port} -n={hostname}
+注册到 windows 服务: sc.exe create DHostsSetter binPath="{path-to-this-project}/d-hosts-setter.exe -a={http://d-hosts-getter-host:port}"
 
 -a 指定d-hosts-getter的地址
--n 指定要更新的域名/主机
 -i 指定更新间隔，单位：秒
 
 Usage:
@@ -17,7 +16,6 @@ Usage:
 Flags:
   -a, --address string    d-hosts-getter 的地址
   -h, --help              help for d-hosts-setter
-  -n, --hostname string   hostname
   -i, --interval int      更新间隔，单位：秒 (default 3600)
 
 ```
@@ -37,13 +35,13 @@ go build -o dist/windows/d-hosts-setter.exe
 1.单独运行
 
 ```
-d-hosts-setter.exe -a={http://d-hosts-getter-host:port} -n={hostname}
+d-hosts-setter.exe -a={http://d-hosts-getter-host:port}
 ```
 
 2.或注册到 windows 服务
 
 ```
-sc.exe create HostsSetter binPath={path-to-this-project}/d-hosts-setter.exe -a={http://d-hosts-getter-host:port} -n={hostname}
+sc.exe create DHostsSetter binPath="{path-to-this-project}/d-hosts-setter.exe -a={http://d-hosts-getter-host:port}"
 ```
 
 ![create](images/sc_create.png)

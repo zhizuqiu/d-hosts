@@ -2,26 +2,51 @@ package service
 
 import (
 	"io/ioutil"
+	"net"
 	"os"
 	"path/filepath"
 	"runtime"
 	"strings"
 )
 
-func SetSystemHosts(ip, hostname, hostsPath string) error {
+func SetSystemHosts(ipMapHostnames map[string]string, hostsPath string) error {
+
 	hosts, err := readSystemHosts(hostsPath)
 	if err != nil {
 		return err
 	}
 
-	ihs := ""
-
+	hostsStr := hosts
 	hostsArr := strings.Split(hosts, "\n")
-	for _, ipAndHostnames := range hostsArr {
-		ihs = ihs + replaceIP(ip, hostname, ipAndHostnames) + "\n"
+
+	for ip, hostname := range ipMapHostnames {
+		a := net.ParseIP(ip)
+		if a != nil {
+			ihs := ""
+			allHas := false
+
+			for i, ipAndHostnames := range hostsArr {
+				rIp, has := replaceIP(ip, hostname, ipAndHostnames)
+				if i == len(hostsArr)-1 {
+					ihs = ihs + rIp
+				} else {
+					ihs = ihs + rIp + "\n"
+				}
+				if has {
+					allHas = true
+				}
+			}
+
+			if !allHas {
+				ihs = ihs + ip + " " + hostname
+			}
+
+			hostsArr = strings.Split(ihs, "\n")
+			hostsStr = ihs
+		}
 	}
 
-	err = writeSystemHosts(hostsPath, ihs)
+	err = writeSystemHosts(hostsPath, hostsStr)
 	if err != nil {
 		return err
 	}
@@ -29,18 +54,18 @@ func SetSystemHosts(ip, hostname, hostsPath string) error {
 	return nil
 }
 
-func replaceIP(ip, hostname, ipAndHostnames string) string {
+func replaceIP(ip, hostname, ipAndHostnames string) (string, bool) {
 	ih := strings.TrimLeft(ipAndHostnames, " ")
 	if len(ih) > 0 && ih[0] != '#' {
 		if strings.Contains(ipAndHostnames, hostname) {
 			spaces := getSpace(ipAndHostnames)
 			ipEnd := strings.Index(ih, " ")
 			if ipEnd > 0 {
-				return spaces + ip + ih[ipEnd:]
+				return spaces + ip + ih[ipEnd:], true
 			}
 		}
 	}
-	return ipAndHostnames
+	return ipAndHostnames, false
 }
 
 func getSpace(ih string) string {

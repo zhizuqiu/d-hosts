@@ -1,55 +1,64 @@
 package main
 
 import (
-	"fmt"
 	"log"
 	"net/http"
 	"strings"
 )
 
-var remoteAddr = ""
+var hostNameMapIp = make(map[string]string)
 
 func hHandler(w http.ResponseWriter, r *http.Request) {
-	_, _ = w.Write([]byte(`POST /curl
+	_, _ = w.Write([]byte(`PUT /set
 GET /get
-GET /ip
 `))
 }
 
-func curlHandler(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodPost {
+func setHandler(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPut {
 		w.WriteHeader(http.StatusMethodNotAllowed)
 		_, _ = w.Write([]byte("405 Method Not Allowed"))
 		return
 	}
-	fmt.Println(r)
-	remoteAddr = r.RemoteAddr
-	_, _ = w.Write([]byte("The Router Addr is: " + remoteAddr))
+
+	ip := parseIp(r.RemoteAddr)
+	ipQuery := r.URL.Query().Get("ip")
+	if ipQuery != "" {
+		ip = ipQuery
+	}
+
+	hostname := r.URL.Query().Get("hostname")
+
+	hostNameMapIp[hostname] = ip
+
+	_, _ = w.Write([]byte("hostname=" + hostname + ",ip=" + ip + "\n"))
 }
 
 func getHandler(w http.ResponseWriter, r *http.Request) {
-	_, _ = w.Write([]byte("The Router Addr is: " + remoteAddr))
+	h := ""
+	for hostname, ip := range hostNameMapIp {
+		h += hostname + " " + ip + "\n"
+	}
+	_, _ = w.Write([]byte(h))
 }
 
-func ipHandler(w http.ResponseWriter, r *http.Request) {
+func parseIp(remoteAddr string) string {
 	ip := remoteAddr
 	index := strings.LastIndex(remoteAddr, ":")
 	if index > 0 {
 		ip = remoteAddr[:index]
 	}
-	_, _ = w.Write([]byte(ip))
+	return ip
 }
 
 func main() {
 	h := http.HandlerFunc(hHandler)
-	ch := http.HandlerFunc(curlHandler)
+	set := http.HandlerFunc(setHandler)
 	get := http.HandlerFunc(getHandler)
-	ip := http.HandlerFunc(ipHandler)
 
 	http.Handle("/", h)
-	http.Handle("/curl", ch)
+	http.Handle("/set", set)
 	http.Handle("/get", get)
-	http.Handle("/ip", ip)
 
 	log.Println("Listening 3000... ")
 	_ = http.ListenAndServe(":3000", nil)

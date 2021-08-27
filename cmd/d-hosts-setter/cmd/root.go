@@ -22,6 +22,12 @@ import (
 	"os"
 )
 
+var (
+	cfgFile  string
+	address  string
+	interval int
+)
+
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
 	Use:   "d-hosts-setter",
@@ -29,10 +35,9 @@ var rootCmd = &cobra.Command{
 	Long: `定时更新本地的 hosts 文件，实现自定义域名的访问
 
 用法：
-注册到 windows 服务: sc.exe create HostsSetter binPath={path-to-this-project}/d-hosts-setter.exe -a={http://d-hosts-getter-host:port} -n={hostname}
+注册到 windows 服务: sc.exe create DHostsSetter binPath="{path-to-this-project}/d-hosts-setter.exe -a={http://d-hosts-getter-host:port}"
 
 -a 指定d-hosts-getter的地址
--n 指定要更新的域名/主机
 -i 指定更新间隔，单位：秒
 `,
 	// Uncomment the following line if your bare application
@@ -44,22 +49,14 @@ var rootCmd = &cobra.Command{
 			log.Println("缺少 -a 参数，使用 -h 查看使用说明")
 			return
 		}
-		hostname, _ := cmd.Flags().GetString("hostname")
-		if hostname == "" {
-			log.Println("缺少 -n 参数，使用 -h 查看使用说明")
-			return
-		}
 
-		service.WindowsRun(address, hostname, interval)
+		service.WindowsRun(address, interval)
 	},
 }
 
 func init() {
 	rootCmd.Flags().StringP("address", "a", "", "d-hosts-getter 的地址")
-	rootCmd.Flags().StringP("hostname", "n", "", "hostname")
 	rootCmd.Flags().IntP("interval", "i", 60*60, "更新间隔，单位：秒")
-
-	// rootCmd.AddCommand(listCmd)
 }
 
 // Execute adds all child commands to the root command and sets flags appropriately.

@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"github.com/kardianos/service"
 	"log"
-	"net"
 	"os"
 	"time"
 )
@@ -15,12 +14,11 @@ var serviceConfig = &service.Config{
 	Description: "通过访问远程d-hosts-getter接口，动态更新本地hosts文件",
 }
 
-func WindowsRun(address, hostname string, interval int) {
+func WindowsRun(address string, interval int) {
 
 	prog := &Program{
 		hostsPath: GetSystemDir(),
 		address:   address,
-		hostname:  hostname,
 		interval:  interval,
 	}
 	s, err := service.New(prog, serviceConfig)
@@ -60,7 +58,6 @@ func WindowsRun(address, hostname string, interval int) {
 type Program struct {
 	hostsPath string
 	address   string
-	hostname  string
 	interval  int
 }
 
@@ -78,20 +75,15 @@ func (p *Program) Stop(s service.Service) error {
 func (p *Program) run() {
 
 	for {
-		ip, err := GetIp(p.address)
+		ipMapHostnames, err := GetIpMapHostnames(p.address)
 		if err != nil {
 			log.Println(err)
 		} else {
-			a := net.ParseIP(ip)
-			if a == nil {
-				log.Println("未获取到ip地址")
+			err = SetSystemHosts(ipMapHostnames, p.hostsPath)
+			if err != nil {
+				log.Println(err)
 			} else {
-				err = SetSystemHosts(a.String(), p.hostname, p.hostsPath)
-				if err != nil {
-					log.Println(err)
-				} else {
-					log.Println("更新 hosts 成功")
-				}
+				log.Println("更新 hosts 成功")
 			}
 		}
 

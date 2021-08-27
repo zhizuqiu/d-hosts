@@ -11,10 +11,6 @@ func init() {
 	hostsPath = GetSystemDir()
 }
 
-func TestSetSystemHosts(t *testing.T) {
-	_ = SetSystemHosts("127.0.0.1", "hostname_test", hostsPath)
-}
-
 func TestReadSystemHosts(t *testing.T) {
 	s, _ := readSystemHosts(hostsPath)
 	fmt.Println(s)
@@ -38,7 +34,7 @@ func TestReplaceIP(t *testing.T) {
 	}
 
 	for _, tt := range replaceIPTests {
-		actual := replaceIP(ip, hostname, tt.in)
+		actual, _ := replaceIP(ip, hostname, tt.in)
 		if actual != tt.expected {
 			t.Errorf("replaceIP(%s) = \"%s\"; expected \"%s\"", tt.in, actual, tt.expected)
 		}

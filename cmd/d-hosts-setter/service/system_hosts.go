@@ -16,35 +16,7 @@ func SetSystemHosts(ipMapHostnames map[string]string, hostsPath string) error {
 		return err
 	}
 
-	hostsStr := hosts
-	hostsArr := strings.Split(hosts, "\n")
-
-	for ip, hostname := range ipMapHostnames {
-		a := net.ParseIP(ip)
-		if a != nil {
-			ihs := ""
-			allHas := false
-
-			for i, ipAndHostnames := range hostsArr {
-				rIp, has := replaceIP(ip, hostname, ipAndHostnames)
-				if i == len(hostsArr)-1 {
-					ihs = ihs + rIp
-				} else {
-					ihs = ihs + rIp + "\n"
-				}
-				if has {
-					allHas = true
-				}
-			}
-
-			if !allHas {
-				ihs = ihs + ip + " " + hostname
-			}
-
-			hostsArr = strings.Split(ihs, "\n")
-			hostsStr = ihs
-		}
-	}
+	hostsStr := replaceIps(ipMapHostnames, hosts)
 
 	err = writeSystemHosts(hostsPath, hostsStr)
 	if err != nil {
@@ -52,6 +24,61 @@ func SetSystemHosts(ipMapHostnames map[string]string, hostsPath string) error {
 	}
 
 	return nil
+}
+
+func replaceIps(ipMapHostnames map[string]string, hosts string) string {
+	hostsStr := hosts
+
+	hostsArr := splitHosts(hostsStr)
+
+	for ip, hostname := range ipMapHostnames {
+		a := net.ParseIP(ip)
+		if a != nil {
+			ihs := ""
+			has := false
+			hasN := false
+
+			for i, ipAndHostnames := range hostsArr {
+				rIp, hasTemp := replaceIP(ip, hostname, ipAndHostnames)
+				ihs = ihs + rIp
+				if hasTemp {
+					has = true
+				}
+				if i == len(hostsArr)-1 {
+					if len(ipAndHostnames) > 0 {
+						hasN = ipAndHostnames[len(ipAndHostnames)-1] == '\n'
+					}
+				}
+			}
+
+			if !has {
+				if hasN {
+					ihs = ihs + ip + " " + hostname + "\n"
+				} else {
+					ihs = ihs + "\n" + ip + " " + hostname
+				}
+			}
+
+			hostsStr = ihs
+			hostsArr = splitHosts(hostsStr)
+		}
+	}
+
+	return hostsStr
+}
+
+func splitHosts(hosts string) []string {
+	hostsArr := make([]string, 0)
+
+	hostsArrTemp := strings.Split(hosts, "\n")
+	for i, h := range hostsArrTemp {
+		if i == len(hostsArrTemp)-1 {
+			hostsArr = append(hostsArr, h)
+		} else {
+			hostsArr = append(hostsArr, h+"\n")
+		}
+	}
+	return hostsArr
 }
 
 func replaceIP(ip, hostname, ipAndHostnames string) (string, bool) {

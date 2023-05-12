@@ -20,3 +20,7 @@
 - 如果路由器的 ip 变化，将会定期更新电脑的 hosts 文件，以实现类似 DDNS 的功能 
 
 ![d-hosts](d-hosts.jpg)
+
+
+## 更新日志
+- 2023-05-12 支持 CoreDns ETCD 插件

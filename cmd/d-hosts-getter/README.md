@@ -20,6 +20,12 @@ or docker:
 docker run -d -p 8007:3000 --restart=always zhizuqiu/d-hosts-getter:latest
 ```
 
+coredns etcd plugin:
+
+```
+docker run -d -p 8007:3000 --restart=always -e ETCDURL=http://localhost:2379 zhizuqiu/d-hosts-getter:latest
+```
+
 ## use
 
 假设：
@@ -41,3 +47,5 @@ docker run -d -p 8007:3000 --restart=always zhizuqiu/d-hosts-getter:latest
 ![demo.png](demo.png)
 
 2.或者使用 [d-hosts-setter](https://github.com/zhizuqiu/d-hosts/tree/master/cmd/d-hosts-setter) 定时更新本地的 hosts 文件，实现自定义域名的访问
+
+3.结合CoreDns ETCD 插件实现 dns 动态更新

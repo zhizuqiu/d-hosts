@@ -6,6 +6,7 @@
 
 ```bash
 GOOS=linux GOARCH=amd64 go build -o dist/amd64/d-hosts-getter
+docker buildx build --file=Dockerfile -t zhizuqiu/d-hosts-getter:latest --platform=linux/amd64 . --push
 ```
 
 ## run

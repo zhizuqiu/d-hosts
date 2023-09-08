@@ -20,3 +20,6 @@ __debug_bin
 
 cmd/d-hosts-setter/dist
 cmd/d-hosts-getter/dist
+
+cmd/d-hosts-getter/tests/certs
+certs

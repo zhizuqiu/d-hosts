@@ -1,6 +1,6 @@
 FROM docker.io/alpine:latest
 
-COPY d-hosts-getter /
+COPY dist/amd64/d-hosts-getter /
 
 RUN chmod +x /d-hosts-getter
 

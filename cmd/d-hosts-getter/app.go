@@ -2,8 +2,12 @@ package main
 
 import (
 	"context"
+	"crypto/tls"
+	"crypto/x509"
+	"d-hosts/cmd/d-hosts-getter/model"
 	"encoding/json"
 	clientv3 "go.etcd.io/etcd/client/v3"
+	"io/ioutil"
 	"log"
 	"net/http"
 	"os"
@@ -14,26 +18,61 @@ import (
 var hostNameMapIp = make(map[string]string)
 
 func getEtcdClient() (*clientv3.Client, error) {
-	var etcdUrl = ""
+	var etcdUrl = "https://etcd:2379"
 	if os.Getenv("ETCDURL") != "" {
 		etcdUrl = os.Getenv("ETCDURL")
 	}
-
 	log.Println("ETCDURL=" + etcdUrl)
 
+	var etcdCert = "certs/admin-zhizuqiu.pem"
+	if os.Getenv("ETCDCERT") != "" {
+		etcdCert = os.Getenv("ETCDCERT")
+	}
+	log.Println("ETCDCERT=" + etcdCert)
+	var etcdCertKey = "certs/admin-zhizuqiu-key.pem"
+	if os.Getenv("ETCDCERTKEY") != "" {
+		etcdCertKey = os.Getenv("ETCDCERTKEY")
+	}
+	log.Println("ETCDCERTKEY=" + etcdCertKey)
+	var etcdCa = "certs/ca.pem"
+	if os.Getenv("ETCDCA") != "" {
+		etcdCa = os.Getenv("ETCDCA")
+	}
+	log.Println("ETCDCA=" + etcdCa)
+
+	// 加载客户端证书
+	cert, err := tls.LoadX509KeyPair(etcdCert, etcdCertKey)
+	if err != nil {
+		return nil, err
+	}
+
+	// 加载 CA 证书
+	caData, err := ioutil.ReadFile(etcdCa)
+	if err != nil {
+		return nil, err
+	}
+
+	pool := x509.NewCertPool()
+	pool.AppendCertsFromPEM(caData)
+
+	_tlsConfig := &tls.Config{
+		Certificates: []tls.Certificate{cert},
+		RootCAs:      pool,
+	}
+
 	etcdUrlArr := strings.Split(etcdUrl, ",")
-	cli, err := clientv3.New(clientv3.Config{
+
+	cfg := clientv3.Config{
 		Endpoints:   etcdUrlArr,
 		DialTimeout: 5 * time.Second,
-	})
+		TLS:         _tlsConfig,
+	}
+
+	cli, err := clientv3.New(cfg)
 	if err != nil {
 		return nil, err
 	}
 	return cli, nil
-}
-
-type DnsValue struct {
-	Host string `json:"host"`
 }
 
 func setHandler(w http.ResponseWriter, r *http.Request) {
@@ -62,10 +101,10 @@ func setHandler(w http.ResponseWriter, r *http.Request) {
 		reverseArray(hs)
 		key := "/skydns/" + strings.Join(hs, "/") + "/"
 		log.Println("key=" + key)
-		log.Println("value=" + ip)
-		valueByte, err := json.Marshal(DnsValue{
+		valueByte, err := json.Marshal(model.DnsValue{
 			Host: ip,
 		})
+		log.Println("value=" + string(valueByte))
 		if err != nil {
 			log.Println(err)
 		} else {
@@ -115,10 +154,16 @@ func main() {
 	set := http.HandlerFunc(setHandler)
 	get := http.HandlerFunc(getHandler)
 
+	var listenAddr = ":31006"
+	if os.Getenv("Listen_ADDR") != "" {
+		listenAddr = os.Getenv("Listen_ADDR")
+	}
+	log.Println("Listen_ADDR=" + listenAddr)
+
 	http.Handle("/", h)
 	http.Handle("/set", set)
 	http.Handle("/get", get)
 
-	log.Println("Listening 3000... ")
-	_ = http.ListenAndServe(":3000", nil)
+	log.Println("Listening " + listenAddr + "... ")
+	_ = http.ListenAndServe(listenAddr, nil)
 }
